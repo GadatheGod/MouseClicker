@@ -1,6 +1,7 @@
 # MouseClicker
 
 A simple, lightweight mouse auto-clicker for Linux. Built with Python, evdev, and PyQt6.
+<img width="422" height="432" alt="image" src="https://github.com/user-attachments/assets/ce1dafc7-e0da-43da-98b0-a4ba1f298abf" />
 
 ## Features
 
