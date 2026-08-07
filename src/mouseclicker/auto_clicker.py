@@ -25,6 +25,7 @@ class AutoClicker:
         self._thread: threading.Thread | None = None
         self._stop_event = threading.Event()
         self._running = False
+        self._device_path: str = "/dev/input/event0"
 
     @property
     def is_running(self) -> bool:
@@ -43,17 +44,50 @@ class AutoClicker:
             long_press_duration=self.profile.long_press_duration,
         )
 
-    def start(self, duration: float | None = None, device_path: str = "/dev/input/event0") -> None:
+    def _find_device(self) -> str:
+        """Find a suitable input device for mouse event injection.
+
+        Returns:
+            Path to the first available mouse device.
+        """
+        try:
+            import evdev
+            for path in evdev.list_devices():
+                try:
+                    device = evdev.InputDevice(path)
+                    if device.info.evbit is not None and evdev.ecodes.EV_REL in device.info.evbit:
+                        device.close()
+                        return path
+                    device.close()
+                except Exception:
+                    continue
+        except Exception:
+            pass
+        
+        for path in ["/dev/input/event3", "/dev/input/event7", "/dev/input/event0"]:
+            if os.path.exists(path):
+                return path
+        
+        return "/dev/input/event0"
+
+    def start(self, duration: float | None = None, device_path: str | None = None) -> None:
         """Start the auto-clicker loop.
 
         Args:
             duration: How long to run in seconds. None = run indefinitely.
-            device_path: evdev device path for injection.
+            device_path: evdev device path for injection. Auto-detected if None.
 
         Raises:
-            FileNotFoundError: If device_path doesn't exist.
+            FileNotFoundError: If no suitable device found.
+            PermissionError: If insufficient permissions to write to device.
             ValueError: If profile is disabled.
         """
+        if self._running:
+            return
+
+        if device_path is None:
+            device_path = self._find_device()
+        
         if not os.path.exists(device_path):
             raise FileNotFoundError(f"Device not found: {device_path}")
 
@@ -63,6 +97,7 @@ class AutoClicker:
         self._running = True
         self._stop_event.clear()
         interval_sec = self.profile.interval / 1000.0
+        self._device_path = device_path
 
         def _loop() -> None:
             try:
@@ -73,10 +108,18 @@ class AutoClicker:
                         if elapsed >= duration:
                             break
                     if self.profile.enabled:
-                        self._inject_click(device_path)
+                        self._inject_click(self._device_path)
                     self._stop_event.wait(interval_sec)
-            finally:
+            except PermissionError:
                 self._running = False
+            except Exception as e:
+                if isinstance(e, FileNotFoundError):
+                    self._running = False
+                else:
+                    self._running = False
+            finally:
+                if not self._stop_event.is_set():
+                    self._running = False
 
         self._thread = threading.Thread(target=_loop, daemon=True)
         self._thread.start()

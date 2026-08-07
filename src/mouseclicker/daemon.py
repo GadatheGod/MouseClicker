@@ -61,9 +61,12 @@ class Daemon:
 
         Args:
             profile: The ClickProfile to use. Defaults to existing profile.
+
+        Returns:
+            True if started successfully, False otherwise.
         """
         if self._running:
-            return
+            return False
 
         if profile:
             self._profile = profile
@@ -71,13 +74,29 @@ class Daemon:
             raise ValueError("No profile configured")
 
         self._clicker = AutoClicker(self._profile)
-        self._clicker.start()
+        try:
+            self._clicker.start()
+        except PermissionError as e:
+            self._clicker = None
+            self._running = False
+            raise RuntimeError(
+                f"Permission denied: {e}. Try running with sudo or add your user to 'input' group:\n"
+                f"  sudo usermod -aG input $USER\n"
+                f"Then log out and log back in."
+            )
+        except Exception as e:
+            self._clicker = None
+            self._running = False
+            raise RuntimeError(f"Failed to start auto-clicker: {e}")
+
         self._running = True
 
         # Start hotkey listener thread if configured
         if self._hotkey_listener:
             self._hotkey_thread = threading.Thread(target=self._hotkey_loop, daemon=True)
             self._hotkey_thread.start()
+        
+        return True
 
     def stop(self) -> None:
         """Stop the daemon."""
@@ -105,39 +124,45 @@ class Daemon:
             return
 
         active_modifiers: dict[str, bool] = {}
-        _, key = self._hotkey_listener._parse_hotkey(self._hotkey_listener.hotkey)
+        modifiers, key = self._hotkey_listener._parse_hotkey(self._hotkey_listener.hotkey)
+        key_code = self._hotkey_listener._get_key_code(key)
+        device_handles: list = []
 
         try:
             devices = self._hotkey_listener.get_available_devices()
             if not devices:
                 return
 
-            # Open all input devices for hotkey listening
-            device_handles = []
+            # Open keyboard devices for hotkey listening
             for dev_path in devices:
                 try:
                     dev = __import__("evdev", fromlist=["InputDevice"])
                     device = dev.InputDevice(dev_path)
-                    device_handles.append(device)
+                    caps = device.capabilities()
+                    if 1 in caps:  # EV_KEY
+                        device_handles.append(device)
+                    else:
+                        device.close()
                 except (PermissionError, OSError):
                     continue
 
             if not device_handles:
                 return
 
+            import sys
             while self._running:
                 for device in device_handles:
                     try:
                         for event in device.read():
-                            if event.type == 4 and event.value in (0, 1, 2):
-                                # EV_MSC - modifier state change
-                                mod_name = self._hotkey_listener._get_key_name(event.code)
-                                if mod_name in self._hotkey_listener.MODIFIER_KEYS:
-                                    active_modifiers[mod_name] = event.value > 0
-                            elif event.type == 1 and event.code == self._hotkey_listener._get_key_code(key) and event.value == 1:
-                                # Key press event matching hotkey
-                                if self._hotkey_listener.is_hotkey_pressed(set(), key, active_modifiers):
-                                    self._on_hotkey_toggle()
+                            # EV_KEY (type 1) events
+                            if event.type == 1:
+                                key_name = self._hotkey_listener._get_key_name(event.code)
+                                if key_name in self._hotkey_listener.MODIFIER_KEYS:
+                                    active_modifiers[key_name] = event.value == 1
+                                elif event.code == key_code and event.value == 1:
+                                    if self._hotkey_listener.is_hotkey_pressed(modifiers, key, active_modifiers):
+                                        print(f"Hotkey pressed! modifiers={active_modifiers}", file=sys.stderr, flush=True)
+                                        self._on_hotkey_toggle()
                     except (BlockingIOError, OSError):
                         continue
         finally:

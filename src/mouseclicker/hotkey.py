@@ -96,6 +96,6 @@ class HotkeyListener:
     def get_available_devices(self) -> list[str]:
         """Get list of available evdev input devices."""
         try:
-            return [dev.path for dev in evdev.list_devices()]
+            return list(evdev.list_devices())
         except PermissionError:
             return []

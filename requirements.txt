@@ -1,5 +1,6 @@
 # Core dependencies
 PyQt6>=6.6
+PyQt6-Qt6>=6.6
 pyyaml>=6.0
 evdev>=1.7
 croniter>=2.0
