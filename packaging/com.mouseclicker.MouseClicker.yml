@@ -1,0 +1,27 @@
+app-id: com.mouseclicker.MouseClicker
+runtime: org.freedesktop.Platform
+runtime-version: '23.08'
+sdk: org.freedesktop.Sdk
+command: mouseclicker
+
+modules:
+  - name: mouseclicker
+    buildsystem: simple
+    build-commands:
+      - pip3 install --no-deps --prefix=${FLATPAK_DEST} .
+    sources:
+      - type: archive
+        url: https://github.com/yourusername/MouseClicker/archive/refs/tags/v0.1.0.tar.gz
+        sha256: 0000000000000000000000000000000000000000000000000000000000000000
+    sources:
+      - type: file
+        path: .
+    install: false
+
+  - name: mouseclicker
+    buildsystem: simple
+    build-commands:
+      - pip3 install --no-build-isolation --no-deps --prefix=/app .
+    sources:
+      - type: dir
+        path: .

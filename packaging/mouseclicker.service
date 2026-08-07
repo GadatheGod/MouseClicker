@@ -1,0 +1,13 @@
+[Unit]
+Description=MouseClicker Daemon - Background mouse auto-clicker
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/mouseclicker daemon
+Restart=on-failure
+RestartSec=5
+User=%i
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,46 @@
+# MouseClicker Configuration
+# Stored in ~/.config/mouseclicker/config.yaml
+
+# Default profile name to use
+default_profile: default
+
+# Global hotkey settings
+hotkey:
+  toggle: "Ctrl+Alt+A"  # Toggle start/stop
+
+# Jitter settings for human-like clicking
+jitter:
+  position: 3  # ±3 pixels position offset
+  timing: 20   # ±20ms timing offset
+
+# Schedule settings
+schedule:
+  mode: cron        # "delay" or "cron"
+  cron: "0 9 * * *" # Every day at 9:00 AM (cron format)
+  delay: 0          # Simple delay in seconds (use 0 to disable)
+
+# Click profiles
+profiles:
+  default:
+    name: default
+    click_type: left_click
+    interval: 100      # milliseconds between clicks
+    coordinates: null  # null = current mouse position
+    long_press_duration: 0  # seconds (only for long_press type)
+    enabled: true
+    
+  slow_click:
+    name: slow_click
+    click_type: left_click
+    interval: 1000
+    coordinates: null
+    long_press_duration: 0
+    enabled: false
+    
+  scroll_profile:
+    name: scroll_profile
+    click_type: scroll_up
+    interval: 200
+    coordinates: null
+    long_press_duration: 0
+    enabled: false

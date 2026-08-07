@@ -1,0 +1,65 @@
+# MouseClicker Demo Script
+# This is a demonstration of the .msck DSL
+# Save this file with a .msck extension and load it in MouseClicker
+
+# Wait 1 second before starting
+delay(1000)
+
+# Set the window title
+title("Demo Script")
+
+# Left click at coordinates (300, 500)
+left_click(300, 500)
+
+# Wait 1 second
+delay(1000)
+
+# Right click at current position
+right_click(null, null)
+
+# Wait 1 second
+delay(1000)
+
+# Long press left click at (300, 500)
+# Press down
+left_click_long(300, 500, 1)
+
+# Hold for 3 seconds
+delay(3000)
+
+# Release
+left_click_long(300, 500, 0)
+
+# Wait 1 second
+delay(1000)
+
+# Long press right click at (300, 500)
+right_click_long(300, 500, 1)
+
+# Hold for 3 seconds
+delay(3000)
+
+# Release
+right_click_long(300, 500, 0)
+
+# Wait 1 second
+delay(1000)
+
+# Scroll up 400 units
+mouse_wheel(400)
+
+# Wait 1 second
+delay(1000)
+
+# Scroll down 400 units
+mouse_wheel(-400)
+
+# Wait 1 second
+delay(1000)
+
+# Launch Firefox browser
+# Note: Add delay or once() after this to avoid opening many windows
+create_process("/usr/bin/firefox")
+
+# Stop looping after this iteration
+once()
